@@ -146,31 +146,42 @@
             const audioControl = document.getElementById('audioControl');
             let isPlaying = false;
             let hasInteracted = false;
+            
+            // Set volume to max, hide control, and prevent volume changes
+            audio.volume = 1.0;
+            audioControl.style.display = 'none';
+            
+            // Prevent volume changes by resetting to max on any volume change
+            audio.addEventListener('volumechange', function() {
+                if (audio.volume < 1.0) {
+                    audio.volume = 1.0;
+                }
+            });
+            
+            // Also prevent context menu that might allow volume control
+            document.addEventListener('contextmenu', function(e) {
+                if (e.target === audio) {
+                    e.preventDefault();
+                }
+            });
 
-            // Play/pause on audio control click
+            // Auto play music when page loads
+            audio.play().then(() => {
+                hasInteracted = true;
+                isPlaying = true;
+            }).catch(e => {
+                console.error("Audio playback failed:", e);
+            });
+            
+            // Keep the click handler in case we need it later
             audioControl.addEventListener('click', function() {
                 if (isPlaying) {
                     audio.pause();
-                    audioControl.innerHTML = '<i class="fas fa-music"></i>';
-                    audioControl.title = 'Play Music';
+                    isPlaying = false;
                 } else {
-                    if (!hasInteracted) {
-                        // First interaction - start playing
-                        audio.play().then(() => {
-                            hasInteracted = true;
-                            isPlaying = true;
-                            audioControl.innerHTML = '<i class="fas fa-pause"></i>';
-                            audioControl.title = 'Pause Music';
-                        }).catch(e => {
-                            console.error("Audio playback failed:", e);
-                        });
-                    } else {
-                        audio.play();
-                        audioControl.innerHTML = '<i class="fas fa-pause"></i>';
-                        audioControl.title = 'Pause Music';
-                    }
+                    audio.play();
+                    isPlaying = true;
                 }
-                isPlaying = !isPlaying;
             });
 
             // Play music on scroll
