@@ -147,30 +147,51 @@
             let isPlaying = false;
             let hasInteracted = false;
             
-            // Set volume to max, hide control, and prevent volume changes
+            // Set initial volume to max and hide control
             audio.volume = 1.0;
+            audio.muted = false;
             audioControl.style.display = 'none';
+            
+            // Function to handle audio play with user interaction
+            function playAudio() {
+                audio.play().then(() => {
+                    hasInteracted = true;
+                    isPlaying = true;
+                    audio.volume = 1.0; // Ensure volume is at max
+                    audio.muted = false; // Ensure not muted
+                }).catch(e => {
+                    console.error("Audio playback failed:", e);
+                    // If autoplay was prevented, show a message to the user
+                    if (e.name === 'NotAllowedError') {
+                        alert('Please click anywhere on the page to enable audio playback');
+                    }
+                });
+            }
+            
+            // Try to play immediately
+            playAudio();
+            
+            // Also try to play on any user interaction
+            document.addEventListener('click', function interactionListener() {
+                if (!hasInteracted) {
+                    playAudio();
+                    // Remove this listener after first interaction
+                    document.removeEventListener('click', interactionListener);
+                }
+            }, { once: true });
             
             // Prevent volume changes by resetting to max on any volume change
             audio.addEventListener('volumechange', function() {
-                if (audio.volume < 1.0) {
+                if (audio.volume < 1.0 || audio.muted) {
                     audio.volume = 1.0;
+                    audio.muted = false;
                 }
             });
             
             // Also prevent context menu that might allow volume control
             document.addEventListener('contextmenu', function(e) {
-                if (e.target === audio) {
-                    e.preventDefault();
-                }
-            });
-
-            // Auto play music when page loads
-            audio.play().then(() => {
-                hasInteracted = true;
-                isPlaying = true;
-            }).catch(e => {
-                console.error("Audio playback failed:", e);
+                e.preventDefault();
+                return false;
             });
             
             // Keep the click handler in case we need it later
